@@ -11,7 +11,12 @@ execute:
 #| message: false
 library(tidyverse)
 library(primer.data)
+library(tidymodels)
+library(broom)
 ```
 
+$$P(Y = 1) = \frac{1}{1 + e^{-(\beta_0 + \beta_1 X_1 + \beta_2 X_2 + \cdots + \beta_n X_n)}}$$
+with $Y \sim \text{Bernoulli}(\rho)$ where $\rho$ is the probability above.
 
-US campaigns include sending postcards to registered voters. For this analysis, we use data from a 2006 field experiment in Michigan to determine how to increase voter participation in Texas's elections. However, we recognize that Michigan may differ from Texas and the broader US.
+
+US campaigns include sending postcards to registered voters. For this analysis, we use data from a 2006 field experiment in Michigan to determine how to increase voter participation in Texas's elections. However, we recognize that Michigan may differ from Texas and the broader US. One weakness of this model is that it doesn't represent the overall US population because the data is only taken from Michigan.
