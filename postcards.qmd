@@ -13,10 +13,13 @@ library(tidyverse)
 library(primer.data)
 library(tidymodels)
 library(broom)
+library(gt)
+library(easystats)
+library(marginaleffects)
 ```
 
 ```{r}
-#| cache = true
+#| cache = TRUE
 x <- shaming |> 
   mutate(civ_engage = primary_00 + primary_02 + primary_04 + 
                general_00 + general_02 + general_04) |> 
@@ -33,8 +36,52 @@ x <- shaming |>
 
 fit_vote <- logistic_reg(engine = "glm") |>
   fit(voted ~ age + sex + treatment * voter_class, data = x)
+```
 
-check_predictions(extract_fit_engine(fit_vote))
+```{r}
+term_labels <- c(
+  "(Intercept)" = "Intercept",
+  "age" = "Age",
+  "sexMale" = "Sex: Male",
+  "treatmentCivic Duty" = "Treatment: Civic Duty",
+  "treatmentHawthorne" = "Treatment: Hawthorne",
+  "treatmentSelf" = "Treatment: Self",
+  "treatmentNeighbors" = "Treatment: Neighbors",
+  "voter_classSometimes Vote" = "Voter Class: Sometimes Vote",
+  "voter_classAlways Vote" = "Voter Class: Always Vote",
+  "treatmentCivic Duty:voter_classSometimes Vote" = "Civic Duty × Sometimes Vote",
+  "treatmentHawthorne:voter_classSometimes Vote" = "Hawthorne × Sometimes Vote",
+  "treatmentSelf:voter_classSometimes Vote" = "Self × Sometimes Vote",
+  "treatmentNeighbors:voter_classSometimes Vote" = "Neighbors × Sometimes Vote",
+  "treatmentCivic Duty:voter_classAlways Vote" = "Civic Duty × Always Vote",
+  "treatmentHawthorne:voter_classAlways Vote" = "Hawthorne × Always Vote",
+  "treatmentSelf:voter_classAlways Vote" = "Self × Always Vote",
+  "treatmentNeighbors:voter_classAlways Vote" = "Neighbors × Always Vote"
+)
+
+tidy(fit_vote) |>
+  mutate(
+    Term = term_labels[as.character(term)],
+    Term = ifelse(is.na(Term), term, Term),  # fallback
+    Estimate = round(estimate, 3),
+    `Std. Error` = round(std.error, 3),
+    `Z-Value` = round(statistic, 2),
+    `P-Value` = round(p.value, 3)
+  ) |>
+  select(Term, Estimate, `Std. Error`, `Z-Value`, `P-Value`) |>
+  gt() |>
+  tab_header(
+    title = "Logistic Regression Coefficients",
+    subtitle = "Predicting Voting in 2006 Primary"
+  ) |>
+  fmt_number(columns = c(Estimate, `Std. Error`, `Z-Value`, `P-Value`), decimals = 3) |>
+  cols_align(align = "center", columns = everything()) |>
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_column_labels(everything())
+  )
+
+
 ```
 $$P(Y = 1) = \frac{1}{1 + e^{-(\beta_0 + \beta_1 X_1 + \beta_2 X_2 + \cdots + \beta_n X_n)}}$$
 with $Y \sim \text{Bernoulli}(\rho)$ where $\rho$ is the probability above.
@@ -42,4 +89,4 @@ with $Y \sim \text{Bernoulli}(\rho)$ where $\rho$ is the probability above.
 logit(P(voted=1))ˆ=−1.89+0.089⋅treatmentCivic Duty+0.125⋅treatmentHawthorne+0.227⋅treatmentSelf+0.371⋅treatmentNeighbors+0.038⋅sexMale+0.020⋅age
 
 
-US campaigns include sending postcards to registered voters. For this analysis, we use data from a 2006 field experiment in Michigan to determine how to increase voter participation in Texas's elections. However, we recognize that Michigan may differ from Texas and the broader US. One weakness of this model is that it doesn't represent the overall US population because the data is only taken from Michigan.
+US campaigns include sending postcards to registered voters. For this analysis, we use data from a 2006 field experiment in Michigan to determine how to increase voter participation in Texas's elections. However, we recognize that Michigan may differ from Texas and the broader US. One weakness of this model is that it doesn't represent the overall US population because the data is only taken from Michigan. We model the outcome variable—whether someone voted— as a binary, and the model estimates how predictor variables influence the log-odds of voting.
